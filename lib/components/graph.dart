@@ -32,7 +32,7 @@ class Graph extends StatelessWidget {
             height: 200.0,
             child: CircularProgressIndicator(
               value: (classPercentage + studyPercentage + freePercentage) / 100,
-              valueColor: AlwaysStoppedAnimation(Colors.yellow[800]),
+              valueColor: AlwaysStoppedAnimation(Colors.green[400]),
               strokeWidth: 15.0,
             ),
           ),
@@ -41,7 +41,7 @@ class Graph extends StatelessWidget {
             height: 200.0,
             child: CircularProgressIndicator(
               value: (classPercentage + studyPercentage) / 100,
-              valueColor: AlwaysStoppedAnimation(Colors.green[400]),
+              valueColor: AlwaysStoppedAnimation(Colors.yellow[800]),
               strokeWidth: 15.0,
             ),
           ),
