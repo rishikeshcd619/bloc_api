@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:coinone/bloc/api_bloc.dart';
 import 'package:coinone/components/device_card.dart';
 import 'package:coinone/components/graph.dart';
 import 'package:coinone/model/device_model.dart';
@@ -11,11 +14,8 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  List<DeviceModel> devices = [
-    DeviceModel("Adi's Phone", "40m", AssetImage('assets/images/phone.jpg')),
-    DeviceModel(
-        "Adi's Laptop", "1h 30m", AssetImage('assets/images/computer.jpg')),
-  ];
+  final apiBloc = ApiBloc();
+  List<DeviceModel> devices = [];
   Widget freeTimeUsageIndicator(int usedTime, int maxTime) {
     return Container(
       height: 120,
@@ -84,6 +84,16 @@ class _HomeState extends State<Home> {
     );
   }
 
+  String getTimeString(int value) {
+    final int hour = value ~/ 60;
+    final int minutes = value % 60;
+    if (hour == 0) {
+      return '${minutes.toString().padLeft(2, "0")}m';
+    } else {
+      return '${hour.toString()}h ${minutes.toString().padLeft(2, "0")}m';
+    }
+  }
+
   Widget classTimeIndicator(Color color, String type, String time) {
     return Expanded(
         flex: 1,
@@ -148,6 +158,12 @@ class _HomeState extends State<Home> {
     );
   }
 
+  Widget loading() {
+    return Center(
+      child: CircularProgressIndicator(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -177,109 +193,151 @@ class _HomeState extends State<Home> {
             width: double.infinity,
             height: double.infinity,
             color: Theme.of(context).backgroundColor,
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: EdgeInsets.symmetric(vertical: 20.0),
-                    child: Text(
-                      'Dashboard',
-                      style: TextStyle(
-                          color: Theme.of(context).primaryColor,
-                          fontSize: 25.0,
-                          fontWeight: FontWeight.w800),
-                    ),
-                  ),
-                  Graph(
-                      classPercentage: 60,
-                      studyPercentage: 30,
-                      freePercentage: 10),
-                  Container(
-                    height: 100.0,
-                    child: Row(
-                      children: [
-                        classTimeIndicator(Colors.blue, 'Class', '1h 20m'),
-                        classTimeIndicator(
-                            Colors.yellow.shade800, 'Study', '20m'),
-                        classTimeIndicator(Colors.green, 'Free-Time', '30m'),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    child: Divider(
-                      color: Colors.grey[300],
-                      thickness: 2.0,
-                    ),
-                  ),
-                  Container(
-                    padding: EdgeInsets.all(10.0),
-                    child: Text(
-                      'Free-time Usage',
-                      style: TextStyle(
-                          color: Theme.of(context).primaryColor,
-                          fontSize: 23.0,
-                          fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                  freeTimeUsageIndicator(30, 120),
-                  SizedBox(
-                    height: 20.0,
-                  ),
-                  extendTimeButton(),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10.0),
-                    child: TextButton(
-                      onPressed: () {},
-                      child: Text(
-                        'Change Time Restrictions',
-                        style: TextStyle(
-                            color: Colors.blue,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700),
+            child: StreamBuilder(
+                stream: apiBloc.apiStream,
+                builder:
+                    (BuildContext context, AsyncSnapshot<dynamic> snapshot) {
+                  if (!snapshot.hasData) return loading();
+                  if (snapshot.data != null) {
+                    dynamic apiData = jsonDecode(snapshot.data)[0];
+                    return SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.symmetric(vertical: 20.0),
+                            child: Text(
+                              'Dashboard',
+                              style: TextStyle(
+                                  color: Theme.of(context).primaryColor,
+                                  fontSize: 25.0,
+                                  fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                          Graph(
+                              totalTime: ((apiData['chartData'])['totalTime'])[
+                                  'total'],
+                              classTime: ((apiData['chartData'])['classTime'])[
+                                  'total'],
+                              studyTime: ((apiData['chartData'])['studyTime'])[
+                                  'total'],
+                              freeTime: ((apiData['chartData'])['freeTime'])[
+                                  'total']),
+                          Container(
+                            height: 100.0,
+                            child: Row(
+                              children: [
+                                classTimeIndicator(
+                                    Colors.blue,
+                                    'Class',
+                                    getTimeString(int.parse(((apiData[
+                                        'chartData'])['classTime'])['total']))),
+                                classTimeIndicator(
+                                    Colors.yellow.shade800,
+                                    'Study',
+                                    getTimeString(int.parse(((apiData[
+                                        'chartData'])['studyTime'])['total']))),
+                                classTimeIndicator(
+                                    Colors.green,
+                                    'Free-Time',
+                                    getTimeString(int.parse(((apiData[
+                                        'chartData'])['freeTime'])['total']))),
+                              ],
+                            ),
+                          ),
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 20.0),
+                            child: Divider(
+                              color: Colors.grey[300],
+                              thickness: 2.0,
+                            ),
+                          ),
+                          Container(
+                            padding: EdgeInsets.all(10.0),
+                            child: Text(
+                              'Free-time Usage',
+                              style: TextStyle(
+                                  color: Theme.of(context).primaryColor,
+                                  fontSize: 23.0,
+                                  fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          freeTimeUsageIndicator(
+                              int.parse(((apiData['chartData'])['freeTime'])[
+                                  'total']),
+                              int.parse(apiData['freeTimeMaxUsage'])),
+                          SizedBox(
+                            height: 20.0,
+                          ),
+                          extendTimeButton(),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10.0),
+                            child: TextButton(
+                              onPressed: () {},
+                              child: Text(
+                                'Change Time Restrictions',
+                                style: TextStyle(
+                                    color: Colors.blue,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 20.0),
+                            child: Divider(
+                              color: Colors.grey[300],
+                              thickness: 2.0,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 20.0),
+                            child: Text(
+                              'By Devices',
+                              style: TextStyle(
+                                  color: Theme.of(context).primaryColor,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: 2,
+                              physics: ScrollPhysics(),
+                              itemBuilder: (BuildContext context, int index) {
+                                devices.add(DeviceModel(
+                                    "Adi's Phone",
+                                    ((apiData['deviceUsage'])['totalTime'])[
+                                        'mobile'],
+                                    AssetImage('assets/images/phone.jpg')));
+                                devices.add(DeviceModel(
+                                    "Adi's Laptop",
+                                    ((apiData['deviceUsage'])['totalTime'])[
+                                        'mobile'],
+                                    AssetImage('assets/images/computer.jpg')));
+                                return DeviceCard(
+                                    title: devices[index].title,
+                                    time: devices[index].time,
+                                    image: devices[index].image);
+                              }),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 20.0),
+                            child: Text(
+                              'See All Devices',
+                              style: TextStyle(
+                                  color: Colors.blue,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    child: Divider(
-                      color: Colors.grey[300],
-                      thickness: 2.0,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 20.0),
-                    child: Text(
-                      'By Devices',
-                      style: TextStyle(
-                          color: Theme.of(context).primaryColor,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                  ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: 2,
-                      physics: ScrollPhysics(),
-                      itemBuilder: (BuildContext context, int index) {
-                        return DeviceCard(
-                            title: devices[index].title,
-                            time: devices[index].time,
-                            image: devices[index].image);
-                      }),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 20.0),
-                    child: Text(
-                      'See All Devices',
-                      style: TextStyle(
-                          color: Colors.blue,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                ],
-              ),
-            )));
+                    );
+                  } else {
+                    return Text('No Data');
+                  }
+                })));
   }
 }

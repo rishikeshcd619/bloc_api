@@ -3,14 +3,27 @@ import 'package:flutter/material.dart';
 class Graph extends StatelessWidget {
   Graph(
       {Key? key,
-      required this.classPercentage,
-      required this.studyPercentage,
-      required this.freePercentage})
+      required this.totalTime,
+      required this.classTime,
+      required this.studyTime,
+      required this.freeTime})
       : super(key: key);
-  final double classPercentage, studyPercentage, freePercentage;
+  final String totalTime, classTime, studyTime, freeTime;
+
+  String getTimeString(int value) {
+    final int hour = value ~/ 60;
+    final int minutes = value % 60;
+    return '${hour.toString()}h ${minutes.toString().padLeft(2, "0")}m';
+  }
 
   @override
   Widget build(BuildContext context) {
+    double classPercentage =
+        ((int.parse(classTime) / int.parse(totalTime)) * 100);
+    double studyPercentage =
+        (int.parse(studyTime) / int.parse(totalTime)) * 100;
+    double freePercentage = (int.parse(freeTime) / int.parse(totalTime)) * 100;
+
     return Container(
       child: Stack(
         children: [
@@ -57,10 +70,10 @@ class Graph extends StatelessWidget {
                         fontWeight: FontWeight.w600),
                   ),
                   Text(
-                    '2h 40m',
+                    getTimeString(int.parse(totalTime)),
                     style: TextStyle(
                         color: Theme.of(context).primaryColor,
-                        fontSize: 30.0,
+                        fontSize: 28.0,
                         fontWeight: FontWeight.w500),
                   ),
                 ],
