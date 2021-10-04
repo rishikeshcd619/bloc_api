@@ -309,13 +309,15 @@ class _HomeState extends State<Home> {
                               itemBuilder: (BuildContext context, int index) {
                                 devices.add(DeviceModel(
                                     "Adi's Phone",
-                                    ((apiData['deviceUsage'])['totalTime'])[
-                                        'mobile'],
+                                    getTimeString(int.parse(
+                                        ((apiData['deviceUsage'])['totalTime'])[
+                                            'mobile'])),
                                     AssetImage('assets/images/phone.jpg')));
                                 devices.add(DeviceModel(
                                     "Adi's Laptop",
-                                    ((apiData['deviceUsage'])['totalTime'])[
-                                        'mobile'],
+                                    getTimeString(int.parse(
+                                        ((apiData['deviceUsage'])['totalTime'])[
+                                            'laptop'])),
                                     AssetImage('assets/images/computer.jpg')));
                                 return DeviceCard(
                                     title: devices[index].title,
@@ -336,7 +338,7 @@ class _HomeState extends State<Home> {
                       ),
                     );
                   } else {
-                    return Text('No Data');
+                    return Center(child: Text('No Data'));
                   }
                 })));
   }
