@@ -1,6 +1,6 @@
-# coinone
+# bloc_api
 
-A new Flutter project.
+A Flutter bloc project.
 
 ## Getting Started
 
